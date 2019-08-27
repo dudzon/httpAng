@@ -1,5 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
+import { map } from 'rxjs/operators';
+import { Post } from './post.model';
 
 @Component({
   selector: 'app-root',
@@ -7,17 +9,20 @@ import { HttpClient } from '@angular/common/http';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
-  loadedPosts = [];
+  loadedPosts: Post[] = [];
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
-  ngOnInit() {}
+  ngOnInit() {
+    this.fetchPosts();
+    // console.log(this.loadedPosts);
+  }
 
   onCreatePost(postData: { title: string; content: string }) {
     console.log(postData);
     // Send Http request
     this.http
-      .post(
+      .post<{ name: string }>(
         'https://ng-complete-guide-b1645.firebaseio.com/posts.json',
         postData
       )
@@ -28,9 +33,26 @@ export class AppComponent implements OnInit {
 
   onFetchPosts() {
     // Send Http request
+    this.fetchPosts();
   }
 
   onClearPosts() {
     // Send Http request
+  }
+  private fetchPosts() {
+    this.http.get<{ [key: string]: Post }>('https://ng-complete-guide-b1645.firebaseio.com/posts.json')
+      .pipe(map(responseData => {
+        const responseArray: Post[] = [];
+        for (const key in responseData) {
+          if (responseData.hasOwnProperty(key)) {
+            responseArray.push({ ...responseData[key], id: key });
+          }
+        }
+        return responseArray;
+      }))
+      .subscribe(responseData => {
+        this.loadedPosts = responseData;
+        console.log(this.loadedPosts);
+      });
   }
 }
